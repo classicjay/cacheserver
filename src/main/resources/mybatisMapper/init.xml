@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bonc.dw3.mapper.InitMapper">
+
+    <!--1.查询最大最小账期入网月观察月标识-->
+    <select id="selectEntryViewMonthIds" resultType="java.util.HashMap">
+        select param_key key, param_values value
+        from sys_init_param
+        where code = 'code_newuser_date'
+    </select>
+
+    <!--2.查询表格接口筛选条件的默认值-->
+    <select id="selectConditionDefaultValues" resultType="java.util.HashMap">
+        select param_key key, param_values value
+        from sys_init_param
+        where code = 'code_newuser_datatable'
+    </select>
+
+</mapper>
