@@ -1,6 +1,5 @@
 package com.bonc.dw3.common;
 
-import com.bonc.dw3.service.NewuserService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -19,7 +18,7 @@ public class TimeArroudAspect implements EnvironmentAware{
 	/**
 	 * 日志对象
 	 */
-    private Logger logger = LoggerFactory.getLogger(NewuserService.class);
+    private Logger logger = LoggerFactory.getLogger(TimeArroudAspect.class);
     
     @Autowired
     private Environment env;

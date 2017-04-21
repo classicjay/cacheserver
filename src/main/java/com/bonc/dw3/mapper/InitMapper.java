@@ -11,19 +11,27 @@ import java.util.*;
 public interface InitMapper {
 
     /**
-     * 1.查询入网月观察月标识
+     * 查询入网月观察月标识
      *
-     * @Author gp
-     * @Date 2017/3/23
      */
     List<Map<String, String>> selectEntryViewMonthIds();
 
 
     /**
-     * 2.查询筛选条件的默认值
+     * 查询筛选条件的默认值
      *
-     * @Author gp
-     * @Date 2017/3/23
      */
     List<Map<String, String>> selectConditionDefaultValues();
+
+    public List<HashMap<String,String>> getAllInitParam();
+
+    public List<HashMap<String, String>> getMinMaxDateEntry();
+
+    public List<HashMap<String, String>> getMinMaxDateView();
+
+    public List<HashMap<String,String>> getServerList();
+
+    public void setFailTime(String failTime);
+
+    public void setServerNotAvailable(HashMap<String,String> paramMap);
 }

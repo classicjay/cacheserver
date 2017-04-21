@@ -2,18 +2,66 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.bonc.dw3.mapper.InitMapper">
 
-    <!--1.查询最大最小账期入网月观察月标识-->
+    <!--查询最大最小账期入网月观察月标识-->
     <select id="selectEntryViewMonthIds" resultType="java.util.HashMap">
         select param_key key, param_values value
         from sys_init_param
         where code = 'code_newuser_date'
     </select>
 
-    <!--2.查询表格接口筛选条件的默认值-->
+    <!--查询表格接口筛选条件的默认值-->
     <select id="selectConditionDefaultValues" resultType="java.util.HashMap">
         select param_key key, param_values value
         from sys_init_param
         where code = 'code_newuser_datatable'
     </select>
+    
+    <select id="getAllInitParam" resultType="java.util.HashMap">
+        select t.CODE,
+        t.URL,
+        decode(listagg(t.PARAM_VALUES, ',') within GROUP(order by t.id),'','-',listagg(t.PARAM_VALUES, ',') within GROUP(order by t.id)) PARAM_VALUES,
+        decode(listagg(t.PARAM_KEY, ',') within GROUP(order by t.id),'','-',listagg(t.PARAM_KEY, ',') within GROUP(order by t.id)) PARAM_KEY
+        from SYS_INIT_PARAM t
+        where t.CODE like 'code_newuser%'
+        group by t.CODE,t.URL
+    </select>
+
+    <!--入网月最大最小账期-->
+    <select id="getMinMaxDateEntry" resultType="java.util.Map">
+        select distinct to_char(to_date(min(t.ACCT_DATE), 'yyyymm'), 'yyyy-mm') MIN_DATE,
+        to_char(to_date(max(t.ACCT_DATE), 'yyyymm'), 'yyyy-mm') MAX_DATE
+        from DW_NEWUSER_ACCT_ENTRY_MONTH t
+    </select>
+
+    <!--观察月最大最小账期-->
+    <select id="getMinMaxDateView" resultType="java.util.Map">
+        select distinct to_char(to_date(min(t.ACCT_DATE), 'yyyymm'), 'yyyy-mm') MIN_DATE,
+        to_char(to_date(max(t.ACCT_DATE), 'yyyymm'), 'yyyy-mm') MAX_DATE
+        from DW_NEWUSER_ACCT_VIEW_MONTH t
+    </select>
+    
+    <select id="getServerList" resultType="java.util.Map">
+        select t.IP_ADDRESS,t.PORT,t.PRIORITY,t.FAIL_TIME
+        from DW_CACHESERVER_INFO t
+        where t.AVAILABILITY = '1'
+        order by to_number(t.PRIORITY)
+    </select>
+
+    <update id="setFailTime" parameterType="String">
+        update DW_CACHESERVER_INFO t
+        set t.FAIL_TIME=#{failTime,jdbcType=VARCHAR}
+    </update>
+
+    <update id="setServerNotAvailable" parameterType="java.util.HashMap">
+        update DW_CACHESERVER_INFO t
+        set t.AVAILABILITY='0'
+        where 1=1
+        <if test="ipAddress !=null and ipAddress !='' ">
+            and t.IP_ADDRESS=#{ipAddress,jdbcType=VARCHAR}
+        </if>
+        <if test="port !=null and port !='' ">
+            and t.PORT=#{port,jdbcType=VARCHAR}
+        </if>
+    </update>
 
 </mapper>

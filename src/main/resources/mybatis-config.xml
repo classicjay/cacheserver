@@ -48,7 +48,6 @@
 	
 	<!--mapper映射 -->
 	<mappers>
-        <mapper resource="mybatisMapper/newuser.xml"/>
         <mapper resource="mybatisMapper/init.xml"/>
 	</mappers>
 </configuration>

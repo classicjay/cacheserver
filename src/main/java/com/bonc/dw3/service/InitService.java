@@ -7,9 +7,6 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.util.*;
 
-/**
- * Created by Candy on 2017/3/23.
- */
 @Service
 @CrossOrigin(origins = "*")
 public class InitService {
@@ -18,10 +15,8 @@ public class InitService {
     InitMapper initMapper;
 
     /**
-     * 1.查询入网月观察月标识
+     * 查询入网月观察月标识
      *
-     * @Author gp
-     * @Date 2017/3/23
      */
     public List<Map<String, String>> getEntryViewMonthIdsList(){
         List<Map<String, String>> entryViewMonthIdsList = new ArrayList<>();
@@ -31,14 +26,41 @@ public class InitService {
 
 
     /**
-     * 2.查询筛选条件的默认值
+     * 查询筛选条件的默认值
      *
-     * @Author gp
-     * @Date 2017/3/23
      */
     public List<Map<String, String>> getConditionDefaultValuesList(){
         List<Map<String, String>> conditionDefaultValuesList = new ArrayList<>();
         conditionDefaultValuesList = initMapper.selectConditionDefaultValues();
         return conditionDefaultValuesList;
+    }
+
+    public List<HashMap<String,String>> getAllInitParam(){
+        List<HashMap<String,String>> allInitParam = new ArrayList<>();
+        allInitParam = initMapper.getAllInitParam();
+        return allInitParam;
+    }
+
+    public List<HashMap<String, String>> getMinMaxDateEntry() {
+        List<HashMap<String, String>> minMaxDateList = initMapper.getMinMaxDateEntry();
+        return minMaxDateList;
+    }
+
+    public List<HashMap<String, String>> getMinMaxDateView() {
+        List<HashMap<String, String>> minMaxDateList = initMapper.getMinMaxDateView();
+        return minMaxDateList;
+    }
+
+    public List<HashMap<String,String>> getServerList(){
+        List<HashMap<String,String>> serverList = initMapper.getServerList();
+        return serverList;
+    }
+
+    public void setFailTime(String failTime){
+        initMapper.setFailTime(failTime);
+    }
+
+    public void setServerNotAvailable(HashMap<String,String> paramMap){
+        initMapper.setServerNotAvailable(paramMap);
     }
 }

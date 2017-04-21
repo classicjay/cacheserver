@@ -13,7 +13,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 @Configuration
 @EnableSwagger2
-public class NewuserConfiguration {
+public class CacheServerConfiguration {
 	@Bean
 	public Docket buildDocket() {
 		return new Docket(DocumentationType.SWAGGER_2).apiInfo(buildApiInf()).select()
@@ -22,6 +22,6 @@ public class NewuserConfiguration {
 	}
 
 	private ApiInfo buildApiInf() {
-		return new ApiInfoBuilder().title("DW3-newuser新发展用户拍照分析项目中使用Swagger2 UI构建API文档").contact("新发展用户拍照分析").version("1.0").build();
+		return new ApiInfoBuilder().title("CacheServer").contact("缓存服务").version("1.0").build();
 	}
 }
