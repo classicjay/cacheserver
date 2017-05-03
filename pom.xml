@@ -4,12 +4,12 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.cloud</groupId>
-	<artifactId>newuser-5</artifactId>
-	<version>2.1.2-SNAPSHOT</version>
+	<artifactId>cacheserver</artifactId>
+	<version>0.0.7-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>newuser-5</name>
-	<description>newuser project(新发展用户拍照分析)</description>
+	<name>cacheserver</name>
+	<description>缓存服务</description>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -84,11 +84,16 @@
             <artifactId>ojdbc6</artifactId>
             <version>11.2.0.3</version>
         </dependency>-->
-        <dependency>
-            <groupId>oracle</groupId>
-            <artifactId>ojdbc6</artifactId>
-            <version>11.2.0.3</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>oracle</groupId>-->
+            <!--<artifactId>ojdbc6</artifactId>-->
+            <!--<version>11.2.0.3</version>-->
+        <!--</dependency>-->
+		<dependency>
+			<groupId>com.oracle</groupId>
+			<artifactId>ojdbc7</artifactId>
+			<version>1.0</version>
+		</dependency>
         <!-- mybatis  -->
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
@@ -111,6 +116,16 @@
             <artifactId>druid</artifactId>
             <version>1.0.29</version>
         </dependency>
+		<dependency>
+			<groupId>net.sf.json-lib</groupId>
+			<artifactId>json-lib</artifactId>
+			<version>2.4</version>
+		</dependency>
+		<!--<dependency>-->
+			<!--<groupId>com.squareup.okhttp3</groupId>-->
+			<!--<artifactId>okhttp</artifactId>-->
+			<!--<version>3.6.0</version>-->
+		<!--</dependency>-->
 <!--        <dependency>
             <groupId>org.freemarker</groupId>
             <artifactId>freemarker</artifactId>
@@ -120,6 +135,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-freemarker</artifactId>
         </dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-hystrix</artifactId>
+		</dependency>
 	</dependencies>
 
 	<dependencyManagement>

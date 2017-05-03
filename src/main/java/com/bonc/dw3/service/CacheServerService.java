@@ -1,5 +1,8 @@
 package com.bonc.dw3.service;
 
+
+import net.sf.json.JSONArray;
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
@@ -16,10 +19,19 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static com.bonc.dw3.utils.TimeUtil.hourBetweenTimes;
+/**
+ * <p>Title: BONC -  CacheServerService</p>
+ * <p>Description: 缓存服务的service </p>
+ * <p>Copyright: Copyright BONC(c) 2013 - 2025 </p>
+ * <p>Company: 北京东方国信科技股份有限公司 </p>
+ *
+ * @author zhaojie
+ * @version 1.0.0
+ */
 @Service
 @CrossOrigin(origins = "*")
 public class CacheServerService {
-
 
     @Autowired
     private Environment env;
@@ -34,7 +46,6 @@ public class CacheServerService {
      * kpicode出账用户
      */
     public static String kpiDefault;//"CKP_25101"
-
     /**
      * 入网月起始时间
      */
@@ -51,7 +62,6 @@ public class CacheServerService {
      * 观察月终止时间
      */
     public static String viewEndDefault;
-
     /**
      * 入网月最大最小账期数据缓存
      */
@@ -60,12 +70,6 @@ public class CacheServerService {
      * 观察月最大最小账期数据缓存
      */
     public static List<HashMap<String,String>> dateViewList = new ArrayList<>();
-    /**
-     * 表格数据缓存
-     */
-    public static String dataMap = new String();
-
-    public static String currentTime = "";
 
     /**
      * 用于保存缓存结果的Map
@@ -76,10 +80,21 @@ public class CacheServerService {
      */
     public static List<HashMap<String,String>> initAllParam;
 
-    public static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH");
-    public static String updateTime = dateFormat.format(new Date()).toString();
+    public static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    /**
+     * 上次缓存数据更新时间
+     */
+    public static String updateTime = "2017-05-01 09:00:00";
+    /**
+     * 累计触发失败次数
+     */
     public static int triggerFailTime;
+    /**
+     * 累计通知失败次数
+     */
     public static int noticeFailTime;
+
+    private static Logger logger = Logger.getLogger(CacheServerService.class);
 
     /**
      * 定时任务-只要定时获取筛选条件等数据，不必每次请求都查询数据库
@@ -98,19 +113,17 @@ public class CacheServerService {
      * 判断如果优先级最高的服务被标记的失败次数超过一半，则标记为服务不可用，重新执行更新缓存操作
      *
      */
-    @Scheduled(fixedRate = 300000)
+    @Scheduled(fixedRate = 120000)
     public void scheduledInit() {
         RestTemplate ipRestTemplate = new RestTemplate();
         triggerFailTime = 0;
         noticeFailTime = 0;
-
         List<HashMap<String,String>> serverList = new ArrayList<>();
         serverList = initService.getServerList();
         HashMap<String,String> mainServer = new HashMap<>();
         if (null != serverList && !serverList.isEmpty()){
             mainServer = serverList.get(0);
         }
-
         InetAddress inetAddress = null;
         String localIp = new String();
         String localPort = env.getProperty("server.port");
@@ -120,16 +133,18 @@ public class CacheServerService {
         }catch (Exception e){
             e.printStackTrace();
         }
-
-        if (null != mainServer && localIp.equals(mainServer.get("IP_ADDRESS")) && localPort.equals(mainServer.get("PORT"))){ //如果ip端口和最高优先级对应ip端口相同
+        logger.info("本机IP："+localIp);
+        logger.info("本机端口："+localPort);
+        if (null != mainServer && localIp.equals(mainServer.get("IP_ADDRESS")) && localPort.equals(mainServer.get("PORT"))){
+            //如果本机IP端口号和最高优先级对应IP端口号相同
             //获取当前时间
             String currenTime = dateFormat.format(new Date()).toString();
-            boolean flag = hourBetweenTimes(currenTime,updateTime);
+            boolean flag = hourBetweenTimes(updateTime,currenTime);
             if (flag){//时间间隔大于1小时，开始更新
+                logger.info("本机为当前优先级最高的机器，上次更新时间为："+updateTime+"，距离上次更新时间超过1小时，进行缓存");
                 getCache();
-                updateTime = dateFormat.format(new Date()).toString();
             }else {//时间间隔不足1小时
-
+                logger.info("本机为当前优先级最高的机器，上次更新时间为："+updateTime+"，距离上次更新时间不足1小时，不进行缓存");
             }
         }else {//ip不一致，通知优先级最高的服务
             HttpHeaders httpHeaders = new HttpHeaders();
@@ -153,8 +168,8 @@ public class CacheServerService {
                         noticeRs = ipRestTemplate.postForObject("http://"+serverList.get(i).get("IP_ADDRESS")+":"+serverList.get(i).get("PORT")+"/CacheServer/notice",formEntity,String.class);
                     } catch (RestClientException e) {
                         e.printStackTrace();
-                        noticeRs = "failed";
-                        System.out.println("ip"+serverList.get(i).get("IP_ADDRESS")+"通知失败");
+                        noticeRs = "notice failed";
+                        logger.info("ip"+serverList.get(i).get("IP_ADDRESS")+"通知失败");
                     }
                     if (("notice succeed and trigger failed").equals(noticeRs)){
                         triggerFailTime++;
@@ -163,58 +178,31 @@ public class CacheServerService {
                     }
                 }
                 if (noticeFailTime >= serverList.size()/2 +1){
-                    System.out.println("本机和其余机器通信出现问题");
+                    logger.info("本机和其余机器通信出现问题");
                     HashMap<String,String> localInfo = new HashMap<>();
                     localInfo.put("ipAddress",localIp);
                     localInfo.put("port",localPort);
                     initService.setServerNotAvailable(localInfo);
                 }
                 if (triggerFailTime >= serverList.size()/2 +1){
-                    System.out.println("优先级最高的服务出现问题");
+                    logger.info("优先级最高的服务出现问题");
                     HashMap<String,String> mainInfo = new HashMap<>();
                     mainInfo.put("ipAddress",mainServer.get("IP_ADDRESS"));
                     mainInfo.put("port",mainServer.get("PORT"));
                     initService.setServerNotAvailable(mainInfo);
                 }
             }else {//通知成功，完毕
-                System.out.println("触发成功");
+                logger.info("触发最高优先级机器缓存成功");
             }
         }
     }
 
-    /**
-     * 计算当前时间和上次更新时间间隔
-     * @param startTime
-     * @param endTime
-     * @return
-     */
-    public static boolean hourBetweenTimes(String startTime, String endTime) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH");
-        Calendar cal = Calendar.getInstance();
-        long earlyTime = 0;
-        long lateTime = 0;
-        try{
-            cal.setTime(sdf.parse(startTime));
-            earlyTime = cal.getTimeInMillis();
-            cal.setTime(sdf.parse(endTime));
-            lateTime = cal.getTimeInMillis();
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-        long betweenHours=(lateTime-earlyTime)/(1000*3600);
-        int hours = Integer.parseInt(String.valueOf(betweenHours));
-        if (hours > 1){
-            return true;
-        }else {
-            return false;
-        }
-
-    }
 
     /**
      * 获取缓存数据,结果都存放在cacheResultMap里
      */
     public void getCache() {
+        updateTime = dateFormat.format(new Date()).toString();
         initAllParam = initService.getAllInitParam();
         System.out.println("initAllParam为:"+initAllParam);
         //入网月最大最小账期默认数据
@@ -226,6 +214,7 @@ public class CacheServerService {
         HttpHeaders httpHeaders = new HttpHeaders();
         MediaType type = MediaType.parseMediaType("application/json; charset=UTF-8");
         httpHeaders.setContentType(type);
+        httpHeaders.add("cacheType","cache");
         httpHeaders.add("Accept","*/*");
 
         for (HashMap<String,String> map:initAllParam){
@@ -233,30 +222,29 @@ public class CacheServerService {
                 HttpEntity formEntity = new HttpEntity(httpHeaders);
                 String result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
                 cacheResultMap.put(map.get("CODE"),result);
-                System.out.print("result为"+result);
             }else {
                 if (map.get("CODE").equals("code_newuser_datatable")){//
                     String[] paramValues = new String[256];
-
                     if (map.get("PARAM_VALUES") != null){
                         paramValues = map.get("PARAM_VALUES").split(",");
                     }
                     List dataTableVal = new ArrayList(Arrays.asList(paramValues));
                     kpiDefault = (String) dataTableVal.get(3);
                     HashMap<String, Object> paramMap = getDataTableParamMap();
+//                    JSONObject paramObj = JSONObject.fromObject(paramMap);
                     HttpEntity<HashMap<String,Object>> formEntity = new HttpEntity<HashMap<String, Object>>(paramMap,httpHeaders);
-                    dataMap = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
-                    cacheResultMap.put(map.get("CODE"),dataMap);
+                    String result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
+                    cacheResultMap.put(map.get("CODE"),result);
                 }else if (map.get("CODE").equals("code_newuser_date_view")){//入网月、观察月
-                    cacheResultMap.put(map.get("CODE"),dateViewList.toString());
+                    JSONArray viewArr = JSONArray.fromObject(dateViewList);
+                    cacheResultMap.put(map.get("CODE"),viewArr.toString());
                 }else if (map.get("CODE").equals("code_newuser_date_entry")){
-                    cacheResultMap.put(map.get("CODE"),dateEntryList.toString());
+                    JSONArray entryArr = JSONArray.fromObject(dateEntryList);
+                    cacheResultMap.put(map.get("CODE"),entryArr.toString());
                 }
-
             }
         }
         System.out.println("cacheResultMap:" + cacheResultMap);
-
     }
 
 
@@ -295,21 +283,26 @@ public class CacheServerService {
      */
     public static HashMap<String, Object> getDataTableParamMap() {
         HashMap<String, Object> paramMap = new HashMap<>();
-        paramMap.put("provId", null);
-        paramMap.put("clientId", null);
-        paramMap.put("channel", null);
-        paramMap.put("contract", null);
-        paramMap.put("network", null);
-        paramMap.put("terminal", null);
-        paramMap.put("income", null);
-        paramMap.put("product", null);
-        paramMap.put("entryStartDate", entryStartDefault);
-        paramMap.put("entryEndDate", entryEndDefault);
-        paramMap.put("viewStartDate", viewStartDefault);
-        paramMap.put("viewEndDate", viewEndDefault);
-        paramMap.put("kpiCode", kpiDefault);
-        //存放用于循环的入网月，每次都进行覆盖
-        paramMap.put("entryMonth", null);
+        HashMap<String,Object> entryDate = new HashMap<>();
+        entryDate.put("startDate",entryStartDefault);
+        entryDate.put("endDate",entryEndDefault);
+        HashMap<String,Object> viewDate = new HashMap<>();
+        viewDate.put("startDate",viewStartDefault);
+        viewDate.put("endDate",viewEndDefault);
+        List<String> idList = new ArrayList<>();
+        idList.add("-1");
+        paramMap.put("provId", "-1");
+        paramMap.put("clientId", "-1");
+        paramMap.put("channelId", idList);
+        paramMap.put("contractId", idList);
+        paramMap.put("networkId", idList);
+        paramMap.put("terminalId", idList);
+        paramMap.put("incomeId", idList);
+        paramMap.put("productId", idList);
+        paramMap.put("entryDate", entryDate);
+        paramMap.put("viewDate", viewDate);
+        paramMap.put("kpi", kpiDefault);
         return paramMap;
     }
+
 }
