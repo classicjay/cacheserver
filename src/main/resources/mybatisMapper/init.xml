@@ -21,8 +21,8 @@
         t.URL,
         decode(listagg(t.PARAM_VALUES, ',') within GROUP(order by t.id),'','-',listagg(t.PARAM_VALUES, ',') within GROUP(order by t.id)) PARAM_VALUES,
         decode(listagg(t.PARAM_KEY, ',') within GROUP(order by t.id),'','-',listagg(t.PARAM_KEY, ',') within GROUP(order by t.id)) PARAM_KEY
-        from SYS_INIT_PARAM t
-        where t.CODE like 'code_newuser%'
+        from CACHE_INIT_PARAM t
+        <!--where t.CODE like 'code_newuser%'-->
         group by t.CODE,t.URL
     </select>
 

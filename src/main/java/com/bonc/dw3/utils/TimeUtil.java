@@ -1,7 +1,8 @@
 package com.bonc.dw3.utils;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.util.Date;
 
 /**
  * <p>Title: BONC -  TimeUtil</p>
@@ -15,29 +16,40 @@ import java.util.Calendar;
 public class TimeUtil {
     /**
      * 计算当前时间和上次更新时间间隔
-     * @param startTime
-     * @param endTime
+     * @param time1
+     * @param time2
      * @return
      */
-    public static boolean hourBetweenTimes(String startTime, String endTime) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH");
-        Calendar cal = Calendar.getInstance();
-        long earlyTime = 0;
-        long lateTime = 0;
-        try{
-            cal.setTime(sdf.parse(startTime));
-            earlyTime = cal.getTimeInMillis();
-            cal.setTime(sdf.parse(endTime));
-            lateTime = cal.getTimeInMillis();
-        }catch(Exception e){
+    public static boolean hourBetweenTimes(String time1, String time2) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date1;
+        Date date2;
+        long days = 0;
+        long hours = 0;
+        long mins = 0;
+        long secs = 0;
+        try {
+            date1 = sdf.parse(time1);
+            date2 = sdf.parse(time2);
+            long timeVal1 = date1.getTime();
+            long timeVal2 = date2.getTime();
+            long diff;
+            if (timeVal1<timeVal2){
+                diff = timeVal2 - timeVal1;
+            }else {
+                diff = timeVal1 - timeVal2;
+            }
+            days = diff/(24 * 60 * 60 * 1000);
+            hours = (diff / (60 * 60 * 1000) - days * 24);
+            mins = ((diff / (60 * 1000)) - days * 24 * 60 - hours * 60);
+            secs = (diff / 1000 - days * 24 * 60 * 60 - hours * 60 * 60 - mins * 60);
+        }catch (ParseException e){
             e.printStackTrace();
         }
-        long betweenHours=(lateTime-earlyTime)/(1000*3600);
-        int hours = Integer.parseInt(String.valueOf(betweenHours));
-        if (hours > 1){
+        if (hours >= 1){
             return true;
         }else {
-            return false;
+            return false ;
         }
 
     }

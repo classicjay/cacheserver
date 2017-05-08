@@ -7,9 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -141,10 +142,10 @@ public class CacheServerService {
             String currenTime = dateFormat.format(new Date()).toString();
             boolean flag = hourBetweenTimes(updateTime,currenTime);
             if (flag){//时间间隔大于1小时，开始更新
-                logger.info("本机为当前优先级最高的机器，上次更新时间为："+updateTime+"，距离上次更新时间超过1小时，进行缓存");
+                logger.info("当前本服务优先级最高，上次更新时间为："+updateTime+"，当前时间为："+currenTime+"，距离上次更新时间超过1小时，进行缓存");
                 getCache();
             }else {//时间间隔不足1小时
-                logger.info("本机为当前优先级最高的机器，上次更新时间为："+updateTime+"，距离上次更新时间不足1小时，不进行缓存");
+                logger.info("当前本服务优先级最高，上次更新时间为："+updateTime+"，当前时间为："+currenTime+"，距离上次更新时间不足1小时，不进行缓存");
             }
         }else {//ip不一致，通知优先级最高的服务
             HttpHeaders httpHeaders = new HttpHeaders();
@@ -178,7 +179,7 @@ public class CacheServerService {
                     }
                 }
                 if (noticeFailTime >= serverList.size()/2 +1){
-                    logger.info("本机和其余机器通信出现问题");
+                    logger.info("本机和其它服务通信出现问题");
                     HashMap<String,String> localInfo = new HashMap<>();
                     localInfo.put("ipAddress",localIp);
                     localInfo.put("port",localPort);
@@ -192,7 +193,7 @@ public class CacheServerService {
                     initService.setServerNotAvailable(mainInfo);
                 }
             }else {//通知成功，完毕
-                logger.info("触发最高优先级机器缓存成功");
+                logger.info("触发最高优先级服务缓存成功");
             }
         }
     }
@@ -202,6 +203,7 @@ public class CacheServerService {
      * 获取缓存数据,结果都存放在cacheResultMap里
      */
     public void getCache() {
+        logger.info("正在执行缓存...");
         updateTime = dateFormat.format(new Date()).toString();
         initAllParam = initService.getAllInitParam();
         System.out.println("initAllParam为:"+initAllParam);
@@ -212,8 +214,8 @@ public class CacheServerService {
         getStartEndDefaultValues(dateEntryList,dateViewList);
 
         HttpHeaders httpHeaders = new HttpHeaders();
-        MediaType type = MediaType.parseMediaType("application/json; charset=UTF-8");
-        httpHeaders.setContentType(type);
+//        MediaType type = MediaType.parseMediaType("application/json; charset=UTF-8");
+//        httpHeaders.setContentType(type);
         httpHeaders.add("cacheType","cache");
         httpHeaders.add("Accept","*/*");
 
@@ -231,7 +233,6 @@ public class CacheServerService {
                     List dataTableVal = new ArrayList(Arrays.asList(paramValues));
                     kpiDefault = (String) dataTableVal.get(3);
                     HashMap<String, Object> paramMap = getDataTableParamMap();
-//                    JSONObject paramObj = JSONObject.fromObject(paramMap);
                     HttpEntity<HashMap<String,Object>> formEntity = new HttpEntity<HashMap<String, Object>>(paramMap,httpHeaders);
                     String result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
                     cacheResultMap.put(map.get("CODE"),result);
@@ -241,10 +242,31 @@ public class CacheServerService {
                 }else if (map.get("CODE").equals("code_newuser_date_entry")){
                     JSONArray entryArr = JSONArray.fromObject(dateEntryList);
                     cacheResultMap.put(map.get("CODE"),entryArr.toString());
+                }else {
+                    MultiValueMap<String,Object> valueMap = new LinkedMultiValueMap<>();
+                    String[] paramValues = new String[256];
+                    String[] keyValues = new String[256];
+                    if (map.get("PARAM_VALUES") != null){
+                        paramValues = map.get("PARAM_VALUES").split(",");
+                    }
+                    if (map.get("PARAM_KEY") != null){
+                        keyValues = map.get("PARAM_KEY").split(",");
+                    }
+                    for (int i=0 ;i<paramValues.length;i++){
+                        valueMap.add(keyValues[i],paramValues[i]);
+                    }
+//                    valueMap.add(map.get("PARAM_KEY"),map.get("PARAM_VALUES"));
+                    HttpEntity<MultiValueMap<String,Object>> formEntity = new HttpEntity<MultiValueMap<String,Object>>(valueMap,httpHeaders);
+                    String result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
+                    cacheResultMap.put(map.get("CODE"),result);
+
+//                    HttpEntity<String> formEntity = new HttpEntity<>(map.get("PARAM_VALUES"),headers);
+//                    String result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
+//                    cacheResultMap.put(map.get("CODE"),result);
                 }
             }
         }
-        System.out.println("cacheResultMap:" + cacheResultMap);
+        System.out.println("cacheResultMap："+cacheResultMap);
     }
 
 
