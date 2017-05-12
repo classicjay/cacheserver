@@ -28,15 +28,15 @@
 
     <!--入网月最大最小账期-->
     <select id="getMinMaxDateEntry" resultType="java.util.Map">
-        select distinct to_char(to_date(min(t.ACCT_DATE), 'yyyymm'), 'yyyy-mm') MIN_DATE,
-        to_char(to_date(max(t.ACCT_DATE), 'yyyymm'), 'yyyy-mm') MAX_DATE
+        select distinct to_char(to_date(min(t.ACCT_DATE), 'yyyymm'), 'yyyy-mm') MINDATE,
+        to_char(to_date(max(t.ACCT_DATE), 'yyyymm'), 'yyyy-mm') MAXDATE
         from DW_NEWUSER_ACCT_ENTRY_MONTH t
     </select>
 
     <!--观察月最大最小账期-->
     <select id="getMinMaxDateView" resultType="java.util.Map">
-        select distinct to_char(to_date(min(t.ACCT_DATE), 'yyyymm'), 'yyyy-mm') MIN_DATE,
-        to_char(to_date(max(t.ACCT_DATE), 'yyyymm'), 'yyyy-mm') MAX_DATE
+        select distinct to_char(to_date(min(t.ACCT_DATE), 'yyyymm'), 'yyyy-mm') MINDATE,
+        to_char(to_date(max(t.ACCT_DATE), 'yyyymm'), 'yyyy-mm') MAXDATE
         from DW_NEWUSER_ACCT_VIEW_MONTH t
     </select>
     

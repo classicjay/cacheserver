@@ -44,12 +44,27 @@ public class CacheServerController {
 
     private static Logger logger = Logger.getLogger(CacheServerController.class);
 
+    /**
+     * 从缓存数据中按微服务code取数
+     * @param code
+     * @return
+     */
     @PostMapping("/result")
     public String getResult(@RequestBody String code){
         logger.info("参数code为："+code);
         String str = cacheResultMap.get(code);
         logger.info("返回值result为："+str);
         return str;
+    }
+
+    /**
+     * 接收最高优先级传来的缓存数据
+     * @param map
+     */
+    @PostMapping("/receiveCache")
+    public void receiveCache(@RequestBody HashMap<String,String> map){
+        cacheResultMap = map;
+        logger.info("接收转发完毕");
     }
 
     /**
@@ -63,11 +78,10 @@ public class CacheServerController {
         boolean flag = hourBetweenTimes(currenTime,updateTime);
         if (flag){//时间间隔大于1小时，开始更新
             cacheServerService.getCache();
-            logger.info("上次更新时间为："+updateTime+"，距离上次更新缓存已超过1小时，触发成功");
+            logger.info("接收触发成功，上次更新时间为："+updateTime+"，距离上次更新缓存已超过1小时，触发成功");
         }else {//时间间隔不足1小时
-            logger.info("上次更新时间为："+updateTime+"，距离上次更新缓存不足1小时，不触发缓存");
+            logger.info("接收触发成功，上次更新时间为："+updateTime+"，距离上次更新缓存不足1小时，不触发缓存");
         }
-//        cacheServerService.getCache();
         return "succeed";
     }
 
@@ -98,4 +112,6 @@ public class CacheServerController {
         }
         return noticeRs;
     }
+
+
 }

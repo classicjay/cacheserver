@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -103,7 +104,7 @@ public class CacheServerService {
      * cron = "0 0 0-23 * * ?" 整点执行
      * 1.查询服务优先级列表，以优先级从高到低排序，排除不可用的服务，返回信息包括ip，端口号，优先级
      * 2.如果最高优先级的ip，端口号与本机一致，开始更新
-     * 2.1 与上次更新时间作比较，如果超过1小时，开始更新
+     * 2.1 与上次更新时间作比较，如果超过1小时，开始更新，
      * 2.1.1  获取缓存配置条件，查询数据库，加入缓存中，把缓存内容向其它机器转发
      * 2.2 不超过1小时，不更新
      * 3.如果最高优先级的ip，端口号与本机不一致，通知优先级最高的服务
@@ -114,7 +115,10 @@ public class CacheServerService {
      * 判断如果优先级最高的服务被标记的失败次数超过一半，则标记为服务不可用，重新执行更新缓存操作
      *
      */
-    @Scheduled(fixedRate = 120000)
+
+
+//    @Scheduled(cron = "0 0 0-23 * * ?")//整点执行定时任务
+    @Scheduled(fixedRate = 5 * 60 * 1000)
     public void scheduledInit() {
         RestTemplate ipRestTemplate = new RestTemplate();
         triggerFailTime = 0;
@@ -203,10 +207,9 @@ public class CacheServerService {
      * 获取缓存数据,结果都存放在cacheResultMap里
      */
     public void getCache() {
-        logger.info("正在执行缓存...");
+        logger.info("正在执行缓存......");
         updateTime = dateFormat.format(new Date()).toString();
         initAllParam = initService.getAllInitParam();
-        System.out.println("initAllParam为:"+initAllParam);
         //入网月最大最小账期默认数据
         dateEntryList = initService.getMinMaxDateEntry();
         //观察月最大最小账期默认数据
@@ -214,16 +217,20 @@ public class CacheServerService {
         getStartEndDefaultValues(dateEntryList,dateViewList);
 
         HttpHeaders httpHeaders = new HttpHeaders();
-//        MediaType type = MediaType.parseMediaType("application/json; charset=UTF-8");
-//        httpHeaders.setContentType(type);
         httpHeaders.add("cacheType","cache");
         httpHeaders.add("Accept","*/*");
 
+        RestTemplate ipRestTemplate = new RestTemplate();
+        String result = null;
         for (HashMap<String,String> map:initAllParam){
             if ("-".equals(map.get("PARAM_VALUES"))){//地域、筛选条件、指标列表
                 HttpEntity formEntity = new HttpEntity(httpHeaders);
-                String result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
-                cacheResultMap.put(map.get("CODE"),result);
+                try {
+                    result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
+                } catch (RestClientException e) {
+                    e.printStackTrace();
+                    logger.info("访问"+map.get("URL")+"时出错");
+                }
             }else {
                 if (map.get("CODE").equals("code_newuser_datatable")){//
                     String[] paramValues = new String[256];
@@ -234,14 +241,18 @@ public class CacheServerService {
                     kpiDefault = (String) dataTableVal.get(3);
                     HashMap<String, Object> paramMap = getDataTableParamMap();
                     HttpEntity<HashMap<String,Object>> formEntity = new HttpEntity<HashMap<String, Object>>(paramMap,httpHeaders);
-                    String result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
-                    cacheResultMap.put(map.get("CODE"),result);
+                    try {
+                        result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
+                    } catch (RestClientException e) {
+                        e.printStackTrace();
+                        logger.info("访问"+map.get("URL")+"时出错");
+                    }
                 }else if (map.get("CODE").equals("code_newuser_date_view")){//入网月、观察月
                     JSONArray viewArr = JSONArray.fromObject(dateViewList);
-                    cacheResultMap.put(map.get("CODE"),viewArr.toString());
+                    result = viewArr.toString();
                 }else if (map.get("CODE").equals("code_newuser_date_entry")){
                     JSONArray entryArr = JSONArray.fromObject(dateEntryList);
-                    cacheResultMap.put(map.get("CODE"),entryArr.toString());
+                    result = entryArr.toString();
                 }else {
                     MultiValueMap<String,Object> valueMap = new LinkedMultiValueMap<>();
                     String[] paramValues = new String[256];
@@ -255,18 +266,40 @@ public class CacheServerService {
                     for (int i=0 ;i<paramValues.length;i++){
                         valueMap.add(keyValues[i],paramValues[i]);
                     }
-//                    valueMap.add(map.get("PARAM_KEY"),map.get("PARAM_VALUES"));
                     HttpEntity<MultiValueMap<String,Object>> formEntity = new HttpEntity<MultiValueMap<String,Object>>(valueMap,httpHeaders);
-                    String result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
-                    cacheResultMap.put(map.get("CODE"),result);
-
+                    try {
+                        result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
+                    } catch (RestClientException e) {
+                        e.printStackTrace();
+                        logger.info("访问"+map.get("URL")+"时出错");
+                    }
 //                    HttpEntity<String> formEntity = new HttpEntity<>(map.get("PARAM_VALUES"),headers);
 //                    String result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
 //                    cacheResultMap.put(map.get("CODE"),result);
                 }
             }
+            if (!StringUtils.isEmpty(result)){
+                result.replaceAll(" ","");
+                result.replaceAll("[\\n\\r]*","");
+                cacheResultMap.put(map.get("CODE"),result);
+            }
         }
         System.out.println("cacheResultMap："+cacheResultMap);
+        //将缓存内容转发
+        List<HashMap<String,String>> serverList = new ArrayList<>();
+        serverList = initService.getServerList();
+        HttpEntity<HashMap<String,String>> formEntity = new HttpEntity<>(cacheResultMap,httpHeaders);
+        for (int i=1;i<serverList.size();i++){
+            if (null != serverList && !serverList.isEmpty()){
+                try {
+                    ipRestTemplate.postForObject("http://"+serverList.get(i).get("IP_ADDRESS")+":"+serverList.get(i).get("PORT")+"/CacheServer/receiveCache",formEntity,String.class);
+                } catch (RestClientException e) {
+                    e.printStackTrace();
+                    logger.info("访问IP为"+serverList.get(i).get("IP_ADDRESS")+"端口号"+serverList.get(i).get("PORT")+"时出错");
+                }
+            }
+        }
+        logger.info("转发完毕");
     }
 
 
@@ -277,8 +310,8 @@ public class CacheServerService {
                                                  List<HashMap<String, String>> minMaxDateListView) {
         SimpleDateFormat format = new SimpleDateFormat("yyyyMM");
         GregorianCalendar gc = new GregorianCalendar();
-        String endEntry = minMaxDateListEntry.get(0).get("MAX_DATE").replace("-", "");
-        String endView = minMaxDateListView.get(0).get("MAX_DATE").replace("-", "");
+        String endEntry = minMaxDateListEntry.get(0).get("MAXDATE").replace("-", "");
+        String endView = minMaxDateListView.get(0).get("MAXDATE").replace("-", "");
         try {
             //入网月起（最大账期往前2个月）止（最大账期）时间默认值
             Date endEntryDate = format.parse(endEntry);

@@ -24,10 +24,7 @@ public class TimeUtil {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Date date1;
         Date date2;
-        long days = 0;
         long hours = 0;
-        long mins = 0;
-        long secs = 0;
         try {
             date1 = sdf.parse(time1);
             date2 = sdf.parse(time2);
@@ -39,10 +36,7 @@ public class TimeUtil {
             }else {
                 diff = timeVal1 - timeVal2;
             }
-            days = diff/(24 * 60 * 60 * 1000);
-            hours = (diff / (60 * 60 * 1000) - days * 24);
-            mins = ((diff / (60 * 1000)) - days * 24 * 60 - hours * 60);
-            secs = (diff / 1000 - days * 24 * 60 * 60 - hours * 60 * 60 - mins * 60);
+            hours = (diff / (60 * 60 * 1000));
         }catch (ParseException e){
             e.printStackTrace();
         }
