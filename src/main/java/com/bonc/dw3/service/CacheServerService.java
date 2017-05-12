@@ -227,7 +227,7 @@ public class CacheServerService {
                 HttpEntity formEntity = new HttpEntity(httpHeaders);
                 try {
                     result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
-                } catch (RestClientException e) {
+                } catch (RestClientException | IllegalStateException e) {
                     e.printStackTrace();
                     logger.info("访问"+map.get("URL")+"时出错");
                 }
@@ -243,7 +243,7 @@ public class CacheServerService {
                     HttpEntity<HashMap<String,Object>> formEntity = new HttpEntity<HashMap<String, Object>>(paramMap,httpHeaders);
                     try {
                         result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
-                    } catch (RestClientException e) {
+                    } catch (RestClientException | IllegalStateException e) {
                         e.printStackTrace();
                         logger.info("访问"+map.get("URL")+"时出错");
                     }
@@ -269,7 +269,7 @@ public class CacheServerService {
                     HttpEntity<MultiValueMap<String,Object>> formEntity = new HttpEntity<MultiValueMap<String,Object>>(valueMap,httpHeaders);
                     try {
                         result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
-                    } catch (RestClientException e) {
+                    } catch (RestClientException | IllegalStateException e) {
                         e.printStackTrace();
                         logger.info("访问"+map.get("URL")+"时出错");
                     }
@@ -282,9 +282,9 @@ public class CacheServerService {
                 result.replaceAll(" ","");
                 result.replaceAll("[\\n\\r]*","");
                 cacheResultMap.put(map.get("CODE"),result);
+                logger.info("CODE为"+map.get("CODE")+"数据存入缓存");
             }
         }
-        System.out.println("cacheResultMap："+cacheResultMap);
         //将缓存内容转发
         List<HashMap<String,String>> serverList = new ArrayList<>();
         serverList = initService.getServerList();
