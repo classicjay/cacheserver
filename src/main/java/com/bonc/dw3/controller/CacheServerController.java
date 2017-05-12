@@ -7,6 +7,7 @@ import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -16,10 +17,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
-import static com.bonc.dw3.service.CacheServerService.cacheResultMap;
-import static com.bonc.dw3.service.CacheServerService.dateFormat;
-import static com.bonc.dw3.service.CacheServerService.updateTime;
-import static com.bonc.dw3.utils.TimeUtil.hourBetweenTimes;
+import static com.bonc.dw3.service.CacheServerService.*;
+import static com.bonc.dw3.utils.TimeUtil.isGreaterThanOneHour;
+
 /**
  * <p>Title: BONC -  CacheServerController</p>
  * <p>Description: 缓存服务的controller </p>
@@ -51,9 +51,13 @@ public class CacheServerController {
      */
     @PostMapping("/result")
     public String getResult(@RequestBody String code){
-        logger.info("参数code为："+code);
+        logger.info("访问参数code为："+code);
         String str = cacheResultMap.get(code);
-        logger.info("返回值result为："+str);
+        if (!StringUtils.isEmpty(str)){
+            logger.info("result正常返回");
+        }else {
+            logger.info("result为空");
+        }
         return str;
     }
 
@@ -75,7 +79,7 @@ public class CacheServerController {
     public String trigger(){
 
         String currenTime = dateFormat.format(new Date()).toString();
-        boolean flag = hourBetweenTimes(currenTime,updateTime);
+        boolean flag = isGreaterThanOneHour(currenTime,updateTime);
         if (flag){//时间间隔大于1小时，开始更新
             cacheServerService.getCache();
             logger.info("接收触发成功，上次更新时间为："+updateTime+"，距离上次更新缓存已超过1小时，触发成功");

@@ -15,12 +15,11 @@ import java.util.Date;
  */
 public class TimeUtil {
     /**
-     * 计算当前时间和上次更新时间间隔
      * @param time1
      * @param time2
      * @return
      */
-    public static boolean hourBetweenTimes(String time1, String time2) {
+    public static boolean isGreaterThanOneHour(String time1, String time2) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Date date1;
         Date date2;
@@ -45,6 +44,40 @@ public class TimeUtil {
         }else {
             return false ;
         }
+    }
 
+    /**
+     * 计算时间间隔
+     * @param time1
+     * @param time2
+     * @return
+     */
+    public static String calTimeInterval(String time1, String time2) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date1;
+        Date date2;
+        long days = 0;
+        long hours = 0;
+        long mins = 0;
+        long secs = 0;
+        try {
+            date1 = sdf.parse(time1);
+            date2 = sdf.parse(time2);
+            long timeVal1 = date1.getTime();
+            long timeVal2 = date2.getTime();
+            long diff;
+            if (timeVal1<timeVal2){
+                diff = timeVal2 - timeVal1;
+            }else {
+                diff = timeVal1 - timeVal2;
+            }
+            days = diff/(24 * 60 * 60 * 1000);
+            hours = (diff / (60 * 60 * 1000) - days * 24);
+            mins = ((diff / (60 * 1000)) - days * 24 * 60 - hours * 60);
+            secs = (diff / 1000 - days * 24 * 60 * 60 - hours * 60 * 60 - mins * 60);
+        }catch (ParseException e){
+            e.printStackTrace();
+        }
+        return "时间间隔为"+days+"天"+hours+"小时"+mins+"分"+secs+"秒";
     }
 }

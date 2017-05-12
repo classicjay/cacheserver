@@ -21,7 +21,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static com.bonc.dw3.utils.TimeUtil.hourBetweenTimes;
+import static com.bonc.dw3.utils.TimeUtil.isGreaterThanOneHour;
+
 /**
  * <p>Title: BONC -  CacheServerService</p>
  * <p>Description: 缓存服务的service </p>
@@ -144,7 +145,7 @@ public class CacheServerService {
             //如果本机IP端口号和最高优先级对应IP端口号相同
             //获取当前时间
             String currenTime = dateFormat.format(new Date()).toString();
-            boolean flag = hourBetweenTimes(updateTime,currenTime);
+            boolean flag = isGreaterThanOneHour(updateTime,currenTime);
             if (flag){//时间间隔大于1小时，开始更新
                 logger.info("当前本服务优先级最高，上次更新时间为："+updateTime+"，当前时间为："+currenTime+"，距离上次更新时间超过1小时，进行缓存");
                 getCache();
@@ -163,8 +164,6 @@ public class CacheServerService {
                 triggerRs = "failed";
             }
             if (("failed").equals(triggerRs)){//通知失败
-//                int failTime = Integer.parseInt(mainServer.get("FAIL_TIME"));
-//                initService.setFailTime(String.valueOf(failTime+1));
                 triggerFailTime++;
                 //邀请其他机器通知优先级最高的服务
                 for (int i = 1;i < serverList.size();i++){
@@ -273,9 +272,6 @@ public class CacheServerService {
                         e.printStackTrace();
                         logger.info("访问"+map.get("URL")+"时出错");
                     }
-//                    HttpEntity<String> formEntity = new HttpEntity<>(map.get("PARAM_VALUES"),headers);
-//                    String result = restTemplate.postForObject(map.get("URL"),formEntity,String.class);
-//                    cacheResultMap.put(map.get("CODE"),result);
                 }
             }
             if (!StringUtils.isEmpty(result)){
